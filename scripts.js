@@ -10,33 +10,58 @@ class Calculator {
     this.currentMathOperation = currentMathOperation;
     this.currentCalculatorAction = currentCalculatorAction;
     this.clear();
+    const saveOperation = undefined;
+    this.isComma = false;
   }
+
   clear() {
     this.currentOperand = "";
     this.PreviousOperand = "";
     this.operation = undefined;
   }
+
   delete() {
     this.currentOperand = this.currentOperand.toString().slice(0, -1);
   }
+
   addDigit(digit) {
+    if (digit === ",") {
+      this.isComma = true;
+    } else {
+      this.isComma = false;
+    }
     if (digit === "," && this.currentOperand.includes(",")) return;
     this.currentOperand = this.currentOperand.toString() + digit.toString();
   }
+
   chooseOperation(operation) {
-    if (this.currentOperand === "") return;
+    if (this.operation === "=") {
+      this.operation = this.saveOperation;
+      this.compute();
+      this.operation = operation;
+    }
+    if (this.operation !== undefined && this.currentOperand === "") {
+      this.operation = operation;
+    }
     if (this.PreviousOperand !== "") {
       this.compute();
+      this.operation = operation;
+    } else {
+      this.operation = operation;
+      this.PreviousOperand = this.currentOperand;
+      this.currentOperand = "";
+      this.saveOperation = operation;
     }
-    this.operation = operation;
-    this.PreviousOperand = this.currentOperand;
-    this.currentOperand = "";
   }
 
   compute() {
     let computation;
-    const prev = parseFloat(this.PreviousOperand);
-    const current = parseFloat(this.currentOperand);
+    const prev = Number(this.PreviousOperand.toString().replace(",", "."));
+    const current = Number(this.currentOperand.toString().replace(",", "."));
+    if (this.operation !== undefined && this.currentOperand === "") {
+      return;
+    }
+    console.log(prev, current);
     if (isNaN(prev) || isNaN(current)) return;
     switch (this.operation) {
       case "+":
@@ -55,14 +80,15 @@ class Calculator {
       default:
         return;
     }
-    this.currentOperand = computation;
-    this.operation = undefined;
-    this.PreviousOperand = "";
+
+    this.currentOperand = "";
+    this.PreviousOperand = computation;
   }
+
   getDisplayNumber(digit) {
-    const toStringnumber = digit.toString();
-    const integerDigits = parseFloat(toStringnumber.split(".")[0]);
-    const decimalDigits = toStringnumber.split(",")[1];
+    const toStringNumber = digit.toString();
+    const integerDigits = Number(toStringNumber.split(".")[0]);
+    const decimalDigits = toStringNumber.split(".")[1];
     let integerDisplay;
     if (isNaN(integerDigits)) {
       integerDisplay = "";
@@ -73,32 +99,56 @@ class Calculator {
       });
     }
     if (decimalDigits != null) {
-      return `${integerDisplay},${decimalDigits}`;
+      return `${integerDisplay}.${decimalDigits}`;
     } else {
       return integerDisplay;
     }
   }
+
   updateDisplay() {
-    this.currentOperandTextElement.innerText = this.getDisplayNumber(
-      this.currentOperand
-    );
+    if (isNaN(this.currentOperand)) {
+      this.currentOperandTextElement.innerText = Number(
+        this.currentOperand.replace(",", ".")
+      ).toLocaleString("pt-br", {
+        style: "decimal",
+        minimumFractionDigits: 0,
+      });
+      if (
+        this.isComma == true &&
+        !this.currentOperandTextElement.innerText.includes(",")
+      ) {
+        const convertedValue = Number(
+          this.currentOperand.replace(",", ".")
+        ).toLocaleString("pt-br", {
+          style: "decimal",
+          minimumFractionDigits: 0,
+        });
+
+        this.currentOperandTextElement.innerText = `${convertedValue}${","}`;
+      }
+    } else {
+      this.currentOperandTextElement.innerText = Number(
+        this.currentOperand
+      ).toLocaleString("pt-br", {
+        style: "decimal",
+        minimumFractionDigits: 0,
+      });
+    }
+
     if (this.operation != null) {
-      this.previousOperandTextElement.innerText = `${this.getDisplayNumber(
-        this.PreviousOperand
-      )} ${this.operation}`;
+      this.previousOperandTextElement.innerText = `${this.PreviousOperand} ${this.operation}`;
     } else {
       this.previousOperandTextElement.innerText = "";
     }
   }
-  delete() {
-    this.currentOperand = this.currentOperand.slice(0, -1);
-  }
+
   processCEOperator() {
     this.currentOperand = "0";
   }
+
   processCOperator() {
     this.currentOperand = "0";
-    this.previousOperand = "";
+    this.PreviousOperand = "";
     this.operation = null;
   }
 }
@@ -134,16 +184,16 @@ buttons.forEach((btn) => {
       value === "X" ||
       value === "÷"
     ) {
-      calc.chooseOperation(btn.innerText);
+      calc.chooseOperation(value);
       calc.updateDisplay();
       console.log("Op: " + value);
     } else if (value === "=") {
-      calc.compute();
+      calc.chooseOperation(value);
       calc.updateDisplay();
+      console.log("Op: " + value);
     } else if (value === "DEL") {
       calc.delete();
       calc.updateDisplay();
-
       console.log("Op: " + value);
     } else if (value === "CE") {
       calc.processCEOperator();
@@ -154,5 +204,3 @@ buttons.forEach((btn) => {
     }
   });
 });
-
-//if (value === "-" || value === "+" || value === "x" || value === "÷")
